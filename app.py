@@ -102,13 +102,13 @@ if st.button("✨ Reveal My Routine ✨", use_container_width=True):
     
     # 2. Filter by Budget
     if user_budget == "Under 500":
-        filtered_stock = filtered_stock[filtered_stock['Price'] < 500]
+        filtered_stock = filtered_stock[filtered_stock['Price'] <= 500]
     elif user_budget == "Under 1000":
-        filtered_stock = filtered_stock[filtered_stock['Price'] < 1000]
+        filtered_stock = filtered_stock[filtered_stock['Price'] <= 1000]
     elif user_budget == "1000 - 1500":
         filtered_stock = filtered_stock[(filtered_stock['Price'] >= 1000) & (filtered_stock['Price'] <= 1500)]
     elif user_budget == "Over 1500":
-        filtered_stock = filtered_stock[filtered_stock['Price'] > 1500]
+       pass
         
     # 3. Filter out Red Flag Ingredient
     if avoid_ingredient != "None - Show everything!":
