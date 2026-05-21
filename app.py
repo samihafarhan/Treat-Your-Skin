@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Page Setup
-st.set_page_config(page_title="Her Happy Skin", page_icon="🎀", layout="centered")
+st.set_page_config(page_title="Treat Your Skin", page_icon="🎀", layout="centered")
 
 def load_data():
     return pd.read_csv('my_products.csv')
@@ -10,13 +10,15 @@ def load_data():
 df = load_data()
 
 # Website Header
-st.title("🎀 Her Happy Skin")
-st.subheader("Routine Matchmaker & Ingredient Scanner")
-st.write("Find your perfect routine while automatically filtering out ingredients your skin dislikes!")
+st.title("🎀 Treat Your Skin")
+st.subheader("Your Personal Skincare Matchmaker")
+st.write("Let's build a glowing routine from our shelves, just for you!")
+# Your teddy bear GIF is safe right here!
+st.image("skincare_teddy1.gif", use_container_width=True)
 st.divider()
 
 # User Inputs 
-st.markdown("### Step 1: Your Skin Profile 💖")
+st.markdown("### Step 1: Tell us about you 💖")
 col1, col2 = st.columns(2)
 
 with col1:
@@ -24,12 +26,11 @@ with col1:
     user_skin = st.selectbox("What is your skin type?", options)
 
 with col2:
-    budget_options = ["Under 500", "500 - 1000", "1000 - 1500", "Over 1500"]
+    budget_options = ["Under 500", "Under 1000", "1000 - 1500", "Over 1500"]
     user_budget = st.radio("What is your budget per item?", budget_options)
 
-# Ingredient Red Flag Dropdown
+# Step 2: Ingredient Red Flag Scanner
 st.markdown("### Step 2: Avoid Specific Ingredients (Optional) 🚫")
-# A list of common trigger ingredients
 red_flags = [
     "None - Show everything!",
     "Salicylic Acid (BHA)",
@@ -41,51 +42,48 @@ red_flags = [
 ]
 avoid_ingredient = st.selectbox("Is there an ingredient you want to completely avoid?", red_flags)
 
-st.divider()
-
-# Reveal Button
+# The Magic Button
 if st.button("✨ Reveal My Routine ✨", use_container_width=True):
-    st.toast('Scanning ingredients and building your routine... 💖', icon='✨')
-    
+    st.divider()
     st.markdown(f"### 🌸 Your Perfect {user_skin} Skin Routine")
     
-    # 1. Base Filter: Skin Type
+    # 1. Filter by Skin Type
     filtered_stock = df[df['Target_Skin'].str.strip().str.lower() == user_skin.lower()]
     
-    # 2. Filter: Budget
+    # 2. Filter by Budget
     if user_budget == "Under 500":
         filtered_stock = filtered_stock[filtered_stock['Price'] < 500]
-    elif user_budget == "500 - 1000":
-        filtered_stock = filtered_stock[(filtered_stock['Price'] >= 500) & (filtered_stock['Price'] <= 1000)]
+    elif user_budget == "Under 1000":
+        filtered_stock = filtered_stock[filtered_stock['Price'] < 1000]
     elif user_budget == "1000 - 1500":
-        filtered_stock = filtered_stock[(filtered_stock['Price'] > 1000) & (filtered_stock['Price'] <= 1500)]
+        filtered_stock = filtered_stock[(filtered_stock['Price'] >= 1000) & (filtered_stock['Price'] <= 1500)]
     elif user_budget == "Over 1500":
         filtered_stock = filtered_stock[filtered_stock['Price'] > 1500]
-    
-    # 3. Filter: Exclude Red Flag Ingredient
-    if avoid_ingredient != "None - Show everything!":
-        # Clean up the name to match what is inside the CSV (e.g., "Salicylic Acid (BHA)" -> "Salicylic Acid")
-        clean_search_term = avoid_ingredient.split(" (")[0]
         
-        # This line keeps only the rows where the ingredient column DOES NOT contain the red flag
+    # 3. Filter out Red Flag Ingredient (New Code Block)
+    if avoid_ingredient != "None - Show everything!":
+        # Extracts just the plain name before the parentheses (e.g. "Niacinamide")
+        clean_search_term = avoid_ingredient.split(" (")[0]
+        # Drop rows where the ingredient text contains our red flag
         filtered_stock = filtered_stock[~filtered_stock['Ingredients'].str.contains(clean_search_term, case=False, na=False)]
     
-    # 4. Print the Routine
     routine_steps = ['Cleanser', 'Toner', 'Serum', 'Moisturizer', 'Sunscreen']
+    total_cost = 0
     
     for step in routine_steps:
         step_items = filtered_stock[filtered_stock['Category'].str.strip() == step]
-        
         st.markdown(f"#### 🫧 {step}")
         
         if len(step_items) > 0:
-            first_item = step_items.iloc[0]
-            
-            # Display item nicely inside a pinkish success container
-            with st.container(border=True):
-                st.markdown(f"**{first_item['Name']}**")
-                st.caption(f"🧪 Key Ingredients: {first_item['Ingredients']}")
-                st.markdown(f"💰 Price: ৳{first_item['Price']}")
+            for index, row in step_items.iterrows():
+                st.success(f"**{row['Name']}** — ৳{row['Price']}\n\n*Star Ingredients:* {row['Ingredients']}")
+                total_cost += row['Price']
+                break # Just show the top 1 item per step to keep it clean!
         else:
             st.info(f"Oops! We are out of {user_skin} {step}s in this price range that fit your ingredient rules right now.")
+            
+    st.divider()
+    st.metric(label="🛍️ Estimated Routine Total", value=f"৳{total_cost}")
+  
+    # Displays your clean, self-disappearing pop-up in the corner!
     st.toast('Your custom routine has been built successfully! 💖', icon='✨')
