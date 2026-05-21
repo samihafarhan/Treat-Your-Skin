@@ -87,14 +87,12 @@ avoid_ingredient = st.selectbox("Is there an ingredient you want to completely a
 st.divider()
 
 # --- STEP 3: START BUTTON ---
-# When clicked, this changes session state to True and triggers the app to reveal the products
 if st.button("🔍 Scan Shelves for My Options", use_container_width=True):
     st.session_state.quiz_started = True
 
-# --- STEP 4: INTERACTIVE MATCHMAKER FORM (Only displays if quiz_started is True) ---
+# --- STEP 4: INTERACTIVE MATCHMAKER FORM ---
 if st.session_state.quiz_started:
     
-    # Live Filtering in background
     filtered_stock = df[df['Target_Skin'].str.strip().str.lower() == user_skin.lower()]
 
     if user_budget == "Under 500":
@@ -102,7 +100,7 @@ if st.session_state.quiz_started:
     elif user_budget == "Under 1000":
         filtered_stock = filtered_stock[filtered_stock['Price'] <= 1000]
     elif user_budget == "1000 - 1500":
-        filtered_stock = filtered_stock[(filtered_stock['Price'] >= 1000) & (filtered_stock['Price'] <= 1500)]
+        filtered_stock = filtered_stock[filtered_stock['Price'] <= 1500]
     elif user_budget == "Any Budget":
         pass
 
@@ -168,7 +166,19 @@ if st.session_state.quiz_started:
                         st.markdown(f"💰 **Price:** ৳{price}")
                     total_cost += price
             st.divider()
-            st.metric(label="🛍️ Total Custom Bundle Cost", value=f"৳{total_cost}")
+            
+            # --- NEW SIDE-BY-SIDE TOTAL COST & GIF LAYOUT ---
+            result_col1, result_col2 = st.columns([1.5, 1])
+            
+            with result_col1:
+                # Displays the total cost metric
+                st.write("\n") # Adds a tiny bit of spacing to line it up nicely
+                st.metric(label="🛍️ Total Custom Bundle Cost", value=f"৳{total_cost}")
+                
+            with result_col2:
+                # This container holds your celebration GIF right next to the price!
+                with st.container(border=True):
+                    st.image("moneyt.gif", use_container_width=True)
             
         with tab2:
             st.markdown("### 🧬 Ingredient Profiles")
