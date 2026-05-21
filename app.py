@@ -168,17 +168,11 @@ if st.session_state.quiz_started:
             st.divider()
             
             # --- NEW SIDE-BY-SIDE TOTAL COST & GIF LAYOUT ---
-            result_col1, result_col2 = st.columns([1.5, 1])
+            #result_col1, result_col2 = st.columns([1.5, 1])
             
-            with result_col1:
-                # Displays the total cost metric
-                st.write("\n") # Adds a tiny bit of spacing to line it up nicely
-                st.metric(label="🛍️ Total Custom Bundle Cost", value=f"৳{total_cost}")
+            st.metric(label="🛍️ Total Custom Bundle Cost", value=f"৳{total_cost}")
                 
-            with result_col2:
-                # This container holds your celebration GIF right next to the price!
-                with st.container(border=True):
-                    st.image("moneyt.gif", use_container_width=True)
+            st.image("moneyt.gif", use_container_width=True)
             
         with tab2:
             st.markdown("### 🧬 Ingredient Profiles")
