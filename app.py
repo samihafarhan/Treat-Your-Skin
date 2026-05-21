@@ -42,7 +42,7 @@ def load_data():
 
 df = load_data()
 
-# --- STEP 1: UPGRADED HEADER LAYOUT (Two Columns to fill the empty space) ---
+# --- STEP 1: HEADER LAYOUT ---
 header_col1, header_col2 = st.columns([1.2, 1])
 
 with header_col1:
@@ -51,13 +51,12 @@ with header_col1:
     st.markdown('<p class="desc-text">Welcome, gorgeous! Finding the right products shouldn\'t feel like guesswork. Tell us a bit about your skin goals, and we\'ll instantly scan our shelves to curate a routine tailored exactly to your needs and budget.</p>', unsafe_allow_html=True)
 
 with header_col2:
-    # Giving the image a clean border container so it sits beautifully next to the text
     with st.container(border=True):
         st.image("skincare_teddy1.gif", use_container_width=True)
 
 st.divider()
 
-# User Inputs 
+# --- STEP 2: PROFILE CONFIGURATION ---
 st.markdown('<p class="step-header">Step 1: Tell us about you 💖</p>', unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 
@@ -66,10 +65,10 @@ with col1:
     user_skin = st.selectbox("What is your skin type?", options)
 
 with col2:
-    budget_options = ["Under 500", "Under 1000", "1000 - 1500", "Over 1500"]
+    # Changed back to "Any Budget" for the unlimited tier to fit your maximum budget logic perfectly
+    budget_options = ["Under 500", "Under 1000", "1000 - 1500", "Any Budget"]
     user_budget = st.radio("What is your budget per item?", budget_options)
 
-# Step 2: Ingredient Red Flag Scanner
 st.markdown('<p class="step-header">Step 2: Avoid Specific Ingredients (Optional) 🚫</p>', unsafe_allow_html=True)
 red_flags = [
     "None - Show everything!",
@@ -82,71 +81,104 @@ red_flags = [
 ]
 avoid_ingredient = st.selectbox("Is there an ingredient you want to completely avoid?", red_flags)
 
-# The Magic Button
-if st.button("✨ Reveal My Routine ✨", use_container_width=True):
-    st.divider()
+st.divider()
+
+# --- STEP 3: LIVE FILTERING IN BACKGROUND ---
+# We filter the data live so the form always shows the right items matching the selectors above
+filtered_stock = df[df['Target_Skin'].str.strip().str.lower() == user_skin.lower()]
+
+if user_budget == "Under 500":
+    filtered_stock = filtered_stock[filtered_stock['Price'] <= 500]
+elif user_budget == "Under 1000":
+    filtered_stock = filtered_stock[filtered_stock['Price'] <= 1000]
+elif user_budget == "1000 - 1500":
+    filtered_stock = filtered_stock[(filtered_stock['Price'] >= 1000) & (filtered_stock['Price'] <= 1500)]
+elif user_budget == "Any Budget":
+    pass
+
+if avoid_ingredient != "None - Show everything!":
+    clean_search_term = avoid_ingredient.split(" (")[0]
+    filtered_stock = filtered_stock[~filtered_stock['Ingredients'].str.contains(clean_search_term, case=False, na=False)]
+
+# --- STEP 4: INTERACTIVE MATCHMAKER FORM ---
+st.markdown(f"### 🌸 Build Your Custom {user_skin} Routine")
+st.write("Select one product from each category below to customize your bundle:")
+
+routine_steps = ['Cleanser', 'Toner', 'Serum', 'Moisturizer', 'Sunscreen']
+
+# We use a Streamlit form so the page doesn't reload every single time a user clicks a radio button
+with st.form("routine_builder_form"):
     
-    # Aesthetic Loading Animation
-    progress_text = "✨ Scanning shelf stock and analyzing ingredients... ✨"
+    # Dictionary to save the user's specific item selections
+    user_selections = {}
+    
+    for step in routine_steps:
+        step_items = filtered_stock[filtered_stock['Category'].str.strip() == step]
+        st.markdown(f"#### 🫧 {step}")
+        
+        if len(step_items) > 0:
+            # Format the options nicely: "Product Name (৳Price)"
+            product_options = []
+            product_mapping = {} # Helps us look up the real price later
+            
+            for index, row in step_items.iterrows():
+                display_label = f"🌸 {row['Name']} — ৳{row['Price']}"
+                product_options.append(display_label)
+                product_mapping[display_label] = (row['Name'], row['Price'], row['Ingredients'])
+            
+            # Display all matching options as a clean radio group for this step
+            selected_radio = st.radio(
+                f"Choose your {step}:", 
+                options=product_options, 
+                label_visibility="collapsed",
+                key=f"radio_{step}"
+            )
+            
+            # Save whatever they selected
+            user_selections[step] = product_mapping[selected_radio]
+            
+        else:
+            st.info(f"Oops! We are out of {user_skin} {step}s that fit your budget or ingredient rules right now.")
+            user_selections[step] = None
+
+    # Submission button inside the form
+    submit_button = st.form_submit_button("✨ Calculate Bundle Total & Lock Routine ✨", use_container_width=True)
+
+# --- STEP 5: DISPLAY SELECTED RESULTS & TOTAL ---
+if submit_button:
+    # Quick, elegant loading animation
+    progress_text = "✨ Packaging your custom bundle... ✨"
     my_bar = st.progress(0, text=progress_text)
     for percent_complete in range(100):
-        time.sleep(0.01)
+        time.sleep(0.005)
         my_bar.progress(percent_complete + 1, text=progress_text)
-    time.sleep(0.3)
     my_bar.empty()
 
-    st.markdown(f"### 🌸 Your Perfect {user_skin} Skin Routine")
+    st.success("### 🛍️ Your Locked Routine Bundle Summary")
     
-    # 1. Filter by Skin Type
-    filtered_stock = df[df['Target_Skin'].str.strip().str.lower() == user_skin.lower()]
-    
-    # 2. Filter by Budget
-    if user_budget == "Under 500":
-        filtered_stock = filtered_stock[filtered_stock['Price'] <= 500]
-    elif user_budget == "Under 1000":
-        filtered_stock = filtered_stock[filtered_stock['Price'] <= 1000]
-    elif user_budget == "1000 - 1500":
-        filtered_stock = filtered_stock[(filtered_stock['Price'] >= 1000) & (filtered_stock['Price'] <= 1500)]
-    elif user_budget == "Over 1500":
-       pass
-        
-    # 3. Filter out Red Flag Ingredient
-    if avoid_ingredient != "None - Show everything!":
-        clean_search_term = avoid_ingredient.split(" (")[0]
-        filtered_stock = filtered_stock[~filtered_stock['Ingredients'].str.contains(clean_search_term, case=False, na=False)]
-    
-    routine_steps = ['Cleanser', 'Toner', 'Serum', 'Moisturizer', 'Sunscreen']
     total_cost = 0
-    
-    # Create beautiful tabs for the results
-    tab1, tab2 = st.tabs(["📋 Recommended Routine", "🧪 Detailed View"])
+    tab1, tab2 = st.tabs(["📋 Selection Summary", "🧪 Complete Ingredient Breakdown"])
     
     with tab1:
         for step in routine_steps:
-            step_items = filtered_stock[filtered_stock['Category'].str.strip() == step]
-            st.markdown(f"#### 🫧 {step}")
-            
-            if len(step_items) > 0:
-                first_item = step_items.iloc[0]
+            selection = user_selections[step]
+            if selection:
+                name, price, _ = selection
                 with st.container(border=True):
-                    st.markdown(f"🌸 **{first_item['Name']}**")
-                    st.markdown(f"🧴 **Price:** ৳{first_item['Price']}")
-                total_cost += first_item['Price']
-            else:
-                st.info(f"Oops! We are out of {user_skin} {step}s in this price range right now.")
-                
+                    st.markdown(f"**{step}:** {name}")
+                    st.markdown(f"💰 **Price:** ৳{price}")
+                total_cost += price
         st.divider()
-        st.metric(label="🛍️ Estimated Routine Total", value=f"৳{total_cost}")
-    
+        st.metric(label="🛍️ Total Custom Bundle Cost", value=f"৳{total_cost}")
+        
     with tab2:
-        st.markdown("### 🧬 Ingredient Breakdown")
-        st.write("Here are the star ingredients in your recommended products:")
+        st.markdown("### 🧬 Ingredient Profiles")
         for step in routine_steps:
-            step_items = filtered_stock[filtered_stock['Category'].str.strip() == step]
-            if len(step_items) > 0:
-                first_item = step_items.iloc[0]
-                st.markdown(f"**{first_item['Name']}:**")
-                st.caption(f"✨ {first_item['Ingredients']}")
+            selection = user_selections[step]
+            if selection:
+                name, _, ingredients = selection
+                st.markdown(f"**{name} ({step}):**")
+                st.caption(f"✨ {ingredients}")
                 st.divider()
 
     st.toast('Your custom routine has been built successfully! 💖', icon='✨')
