@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+from streamlit_extras.let_it_rain import rain
 # Page Setup
 st.set_page_config(page_title="Treat Your Skin", page_icon="🎀", layout="centered")
 
@@ -66,4 +66,11 @@ if st.button("✨ Reveal My Routine ✨", use_container_width=True):
             
     st.divider()
     st.metric(label="🛍️ Estimated Routine Total", value=f"৳{total_cost}")
-    st.balloons()
+    #st.balloons()
+    # This creates a 3-second shower of sparkles!
+    rain(
+        emoji="✨",
+        font_size=40,
+        falling_speed=4,
+        animation_length=3,
+    )
