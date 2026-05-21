@@ -71,6 +71,6 @@ if st.button("✨ Reveal My Routine ✨", use_container_width=True):
     rain(
         emoji="✨",
         font_size=40,
-        falling_speed=4,
-        animation_length=3,
+        falling_speed=10,
+        animation_length=2, 
     )
